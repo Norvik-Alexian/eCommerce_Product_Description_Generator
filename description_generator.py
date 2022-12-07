@@ -42,6 +42,22 @@ class ProductDescription:
 
         return first_description, second_description
 
+    @property
+    def generate_highlight(self):
+        first_description, second_description = self.generate_description(config.KEYWORDS)
+        model = openai.Completion.create(
+            engine=config.ENGINE,
+            prompt=f'{config.HIGHLIGHT_PROMPT}\n\nProduct Description: {second_description}\nHighlights:',
+            max_tokens=config.MAX_TOKENS,
+            top_p=config.TOP_P,
+            frequency_penalty=config.FREQUENCY_PENALTY,
+            presence_penalty=config.PRESENCE_PENALTY
+        )
+
+        description_highlight_format = f'{first_description}\n\nHighlights:\n{model["choices"][0]["text"]}'
+
+        return description_highlight_format
+
 
 output = ProductDescription()
-print(output.generate_description(['Ucraft', 'e-commerce', 'website builder']))
+print(output.generate_highlight)
