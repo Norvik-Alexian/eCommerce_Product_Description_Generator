@@ -26,6 +26,22 @@ class ProductDescription:
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
 
+    @staticmethod
+    def prettifier(content: str, finish_reason: str):
+        if finish_reason == 'length':
+            ending_punctuations = config.ENDING_PUNCTUATION
+            any_finished_sequence = any([mark in content for mark in ending_punctuations])
+            if any_finished_sequence:
+                reversed_content = content[::-1]
+                last_finished_sequence = len(content) - 1 - min(
+                    [reversed_content.index(mark) for mark in ending_punctuations if mark in content]
+                )
+                content = content[:last_finished_sequence+1]
+
+        content = config.REMOVE_EXTRA_SPACE_PATTERN.sub(' ', content)
+
+        return content
+
     def generate_description(self, keywords: list):
         model = openai.Completion.create(
             engine=self.engine,
@@ -37,14 +53,16 @@ class ProductDescription:
             n=2
         )
 
-        first_description = model['choices'][0]['text']
-        second_description = model['choices'][1]['text']
+        first_description = model['choices'][0]['text'].strip()
+        first_finish_reason = model['choices'][0]['finish_reason']
 
-        return first_description, second_description
+        second_description = model['choices'][1]['text'].strip()
+        second_finish_reason = model['choices'][1]['finish_reason']
 
-    @property
-    def generate_highlight(self):
-        first_description, second_description = self.generate_description(config.KEYWORDS)
+        return self.prettifier(first_description, first_finish_reason), self.prettifier(second_description, second_finish_reason)
+
+    def generate_highlight(self, keywords: list):
+        first_description, second_description = self.generate_description(keywords)
         model = openai.Completion.create(
             engine=config.ENGINE,
             prompt=f'{config.HIGHLIGHT_PROMPT}\n\nProduct Description: {second_description}\nHighlights:',
@@ -54,10 +72,6 @@ class ProductDescription:
             presence_penalty=config.PRESENCE_PENALTY
         )
 
-        description_highlight_format = f'{first_description}\n\nHighlights:\n{model["choices"][0]["text"]}'
+        description_highlight_format = f'{first_description}\n\nHighlights:\n{model["choices"][0]["text"].strip()}'
 
         return description_highlight_format
-
-
-output = ProductDescription()
-print(output.generate_highlight)
