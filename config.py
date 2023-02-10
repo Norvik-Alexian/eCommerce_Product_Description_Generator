@@ -1,6 +1,6 @@
 import re
 
-ENGINE = 'text-davinci-002'
+ENGINE = 'text-davinci-003'
 MAX_TOKENS = 80
 TOP_P = 1.
 FREQUENCY_PENALTY = 1.
